@@ -1052,18 +1052,22 @@ typedef NS_ENUM(NSInteger, GCDAsyncSocketError) {
  * By default the new socket will have the same delegate and delegateQueue.
  * You may, of course, change this at any time.
 **/
+//当sock开始对某个端口进行监听的时候，并且这个端口被另一个链路连接起来（可能是Socket B或者其他的东东）那么如果B向A发送数据，A通过下面这个方法就可以获取到发送过来的NewSocket，通过这个NewSocket，Socket A就可以读取B发送过来的数据。当然接收完之后，利用这个NewSocket还可以将数据写回给B。
+//当B向A发数据的时候，A调用这个方法。
 - (void)socket:(GCDAsyncSocket *)sock didAcceptNewSocket:(GCDAsyncSocket *)newSocket;
 
 /**
  * Called when a socket connects and is ready for reading and writing.
  * The host parameter will be an IP address, not a DNS name.
 **/
+//当一个Socket 开始和某一个IP地址＋端口号建立连接的时候调用这个方法。比如调用Connect类似的方法。
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port;
 
 /**
  * Called when a socket has completed reading the requested data into memory.
  * Not called if there is an error.
 **/
+//Socket开始读取数据的时候调用这个方法：比如ReadData相关的方法
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag;
 
 /**
@@ -1076,6 +1080,7 @@ typedef NS_ENUM(NSInteger, GCDAsyncSocketError) {
 /**
  * Called when a socket has completed writing the requested data. Not called if there is an error.
 **/
+//Socket开始写入数据的时候调用这个方法
 - (void)socket:(GCDAsyncSocket *)sock didWriteDataWithTag:(long)tag;
 
 /**
@@ -1095,6 +1100,7 @@ typedef NS_ENUM(NSInteger, GCDAsyncSocketError) {
  * 
  * Note that this method may be called multiple times for a single read if you return positive numbers.
 **/
+//Socket读超时的时候调用下面的方法
 - (NSTimeInterval)socket:(GCDAsyncSocket *)sock shouldTimeoutReadWithTag:(long)tag
                                                                  elapsed:(NSTimeInterval)elapsed
                                                                bytesDone:(NSUInteger)length;
@@ -1110,6 +1116,7 @@ typedef NS_ENUM(NSInteger, GCDAsyncSocketError) {
  * 
  * Note that this method may be called multiple times for a single write if you return positive numbers.
 **/
+//Socket写超时的时候调用下面的方法
 - (NSTimeInterval)socket:(GCDAsyncSocket *)sock shouldTimeoutWriteWithTag:(long)tag
                                                                   elapsed:(NSTimeInterval)elapsed
                                                                 bytesDone:(NSUInteger)length;
@@ -1143,6 +1150,7 @@ typedef NS_ENUM(NSInteger, GCDAsyncSocketError) {
  * 
  * Of course, this depends on how your state machine is configured.
 **/
+//这个方法一定要注意，Socket连接断开的时候调用，无论此时是正常断开还是异常断开。正常断开err为空
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err;
 
 /**

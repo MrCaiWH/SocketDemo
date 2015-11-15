@@ -36,6 +36,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * When connecting, this delegate method may be called
  * before"onSocket:didAcceptNewSocket:" or "onSocket:didConnectToHost:".
 **/
+//发 生错误，socket关闭，可以在call-back过程调用"unreadData"去取得socket的最后的数据字节，当连接的时候，该委托方法 在    onSocket:didAcceptNewSocket: 或者 onSocket:didConnectToHost： 之前调用
 - (void)onSocket:(AsyncSocket *)sock willDisconnectWithError:(NSError *)err;
 
 /**
@@ -45,12 +46,14 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * If you call the disconnect method, and the socket wasn't already disconnected,
  * this delegate method will be called before the disconnect method returns.
 **/
+//当socket由于或没有错误而断开连接，如果你想要在断开连接后release socket，在此方法工作，而在onSocket:willDisconnectWithError 释放则不安全
 - (void)onSocketDidDisconnect:(AsyncSocket *)sock;
 
 /**
  * Called when a socket accepts a connection.  Another socket is spawned to handle it. The new socket will have
  * the same delegate and will call "onSocket:didConnectToHost:port:".
 **/
+//当产生一个socket去处理连接时调用，此方法会返回 线程上的run-loop 的新的socket和其应处理的委托，如果省略，则使用[NSRunLoop cunrrentRunLoop]
 - (void)onSocket:(AsyncSocket *)sock didAcceptNewSocket:(AsyncSocket *)newSocket;
 
 /**
@@ -76,12 +79,14 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * Called when a socket connects and is ready for reading and writing.
  * The host parameter will be an IP address, not a DNS name.
 **/
+//当socket连接正准备读和写的时候调用，host属性是一个IP地址，而不是一个DNS 名称
 - (void)onSocket:(AsyncSocket *)sock didConnectToHost:(NSString *)host port:(UInt16)port;
 
 /**
  * Called when a socket has completed reading the requested data into memory.
  * Not called if there is an error.
 **/
+//当socket已完成所要求的数据读入内存时调用，如果有错误则不调用
 - (void)onSocket:(AsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag;
 
 /**
@@ -89,17 +94,20 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * This would occur if using readToData: or readToLength: methods.
  * It may be used to for things such as updating progress bars.
 **/
+//当一个socket读取数据，但尚未完成读操作的时候调用，如果使用 readToData: or readToLength: 方法 会发生,可以被用来更新进度条等东西
 - (void)onSocket:(AsyncSocket *)sock didReadPartialDataOfLength:(NSUInteger)partialLength tag:(long)tag;
 
 /**
  * Called when a socket has completed writing the requested data. Not called if there is an error.
 **/
+//当一个socket已完成请求数据的写入时候调用
 - (void)onSocket:(AsyncSocket *)sock didWriteDataWithTag:(long)tag;
 
 /**
  * Called when a socket has written some data, but has not yet completed the entire write.
  * It may be used to for things such as updating progress bars.
 **/
+//当一个socket写入一些数据，但还没有完成整个写入时调用，它可以用来更新进度条等东西
 - (void)onSocket:(AsyncSocket *)sock didWritePartialDataOfLength:(NSUInteger)partialLength tag:(long)tag;
 
 /**
@@ -113,6 +121,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * 
  * Note that this method may be called multiple times for a single read if you return positive numbers.
 **/
+//使用读操作已超时但还没完成时调用，此方法允许随意延迟超时，如果返回一个正的时间间隔，读取的超时将有一定量的扩展，如果不实现这个方法，或会像往常一样 返回一个负的时间间隔，elapsed参数是  原超时的总和，加上先前通过这种方法添加的任何补充， length参数是 读操作到目前为止已读取的字节数， 注意，如果返回正数的话，这个方法可能被一个单独的读取多次调用
 - (NSTimeInterval)onSocket:(AsyncSocket *)sock
   shouldTimeoutReadWithTag:(long)tag
                    elapsed:(NSTimeInterval)elapsed
@@ -129,6 +138,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * 
  * Note that this method may be called multiple times for a single write if you return positive numbers.
 **/
+//如果一个写操作已达到其超时但还没完成时调用，同上
 - (NSTimeInterval)onSocket:(AsyncSocket *)sock
  shouldTimeoutWriteWithTag:(long)tag
                    elapsed:(NSTimeInterval)elapsed
@@ -141,6 +151,8 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * If a SSL/TLS negotiation fails (invalid certificate, etc) then the socket will immediately close,
  * and the onSocket:willDisconnectWithError: delegate method will be called with the specific SSL error code.
 **/
+//在socket成功完成ssl/tls协商时调用，此方法除非你使用提供startTLS方法时候才调用，
+//如果ssl/tls是无效的证书，socket将会立即关闭，onSocket:willDisconnectWithError:代理方法竟会与特定的ssl错误代码一起调用
 - (void)onSocketDidSecure:(AsyncSocket *)sock;
 
 @end
@@ -234,6 +246,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * When a connection comes in, the AsyncSocket instance will call the various delegate methods (see above).
  * The socket will listen on all available interfaces (e.g. wifi, ethernet, etc)
 **/
+//告诉socket开始听取和接受指定端口上的连接，当一个连接到来的时候，AsyncSocket实例将调用各种委托方法，socket将听取所有可用的接口(wifi,以太网等)
 - (BOOL)acceptOnPort:(UInt16)port error:(NSError **)errPtr;
 
 /**
@@ -252,6 +265,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * Connects to the given host and port.
  * The host may be a domain name (e.g. "deusty.com") or an IP address string (e.g. "192.168.0.2")
 **/
+//连接给定的主机和端口，主机hostname可以是域名或者是Ip地址
 - (BOOL)connectToHost:(NSString *)hostname onPort:(UInt16)port error:(NSError **)errPtr;
 
 /**
@@ -271,6 +285,9 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * struct sockaddr sa  -> NSData *dsa = [NSData dataWithBytes:&remoteAddr length:remoteAddr.sa_len];
  * struct sockaddr *sa -> NSData *dsa = [NSData dataWithBytes:remoteAddr length:remoteAddr->sa_len];
 **/
+//连接到一个给定的地址，指定一个sockaddr结构包裹住一个NSData对象,例如，NSData对象从NSNetService的地址方法返回,如果有一个现有的sockaddr结构，可以将它转换到一个NSData对象，像这样：
+//struct sockaddr sa  -> NSData *dsa = [NSData dataWithBytes:&remoteAddr length:remoteAddr.sa_len];
+//struct sockaddr *sa -> NSData *dsa = [NSData dataWithBytes:remoteAddr length:remoteAddr->sa_len];
 - (BOOL)connectToAddress:(NSData *)remoteAddr error:(NSError **)errPtr;
 
 /**
@@ -294,6 +311,12 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * [asyncSocket disconnect];
  * [asyncSocket release];
 **/
+//立即断开，任何未处理的读或写都将被丢弃
+//如果socket还没有断开，在这个方法返回之前，onSocketDidDisconnect 委托方法将会被立即调用
+//注意推荐释放AsyncSocket实例的方式：
+//[asyncSocket setDelegate:nil];
+//[asyncSocket disconnect];
+//[asyncSocket release];
 - (void)disconnect;
 
 /**
@@ -301,6 +324,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * After calling this, the read and write methods will do nothing.
  * The socket will disconnect even if there are still pending writes.
 **/
+//在已经完成了所有悬而未决的读取时 断开,在调用之后，读取和写入方法将无用,socket将断开 即使仍有写入的东西
 - (void)disconnectAfterReading;
 
 /**
@@ -323,9 +347,9 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * Returns the local or remote host and port to which this socket is connected, or nil and 0 if not connected.
  * The host will be an IP address.
 **/
+//返回本地和远程主机和端口给连接的socket，如果没有连接会返回nil或0,主机将会是一个IP地址
 - (NSString *)connectedHost;
 - (UInt16)connectedPort;
-
 - (NSString *)localHost;
 - (UInt16)localPort;
 
@@ -335,6 +359,17 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * 
  * See also the connectedHost, connectedPort, localHost and localPort methods.
 **/
+//返回本地和远程的地址给连接的socket，指定一个socketaddr结构包裹在一个NSData对象
+//
+//
+//readData和writeData方法不会是block(它们是异步的)
+//当读完成 onSocket:didReadData:withTag: 委托方法时调用
+//当写完成 onSocket:didWriteDataWithTag: 委托方法时调用
+//可以选择任何读/写操作的超时设置(为了不超时，使用负时间间隔。）
+//                 如果读/写操作超时，相应的 onSocket:shouldTimeout...委托方法被调用去选择性地允许我们去延长超时
+//                 超时后，onSocket:willDisconnectWithError: 方法被调用,紧接着是 onSocketDidDisconnect
+//                 tag是为了方便，可以使用它作为数组的索引、步数、state id 、指针等
+
 - (NSData *)connectedAddress;
 - (NSData *)localAddress;
 
@@ -363,6 +398,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * 
  * If the timeout value is negative, the read operation will not use a timeout.
 **/
+//读取socket上第一次成为可用的字节,如果timeout值是负数的，读操作将不使用timeout
 - (void)readDataWithTimeout:(NSTimeInterval)timeout tag:(long)tag;
 
 /**
@@ -380,6 +416,15 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * After completion, the data returned in onSocket:didReadData:withTag: will be a subset of the given buffer.
  * That is, it will reference the bytes that were appended to the given buffer.
 **/
+//读取socket上第一次成为可用的字节
+//字节将被追加到给定的字节缓冲区，从给定的偏移量开始
+//如果需要，给定的缓冲区大小将会自动增加
+//如果timeout值是负数的，读操作将不使用timeout
+//如果缓冲区为空，socket会为我们创建一个缓冲区
+//如果bufferOffset是大于给定的缓冲区的长度，该方法将无用，委托将不会被调用
+//如果你传递一个缓冲区，当AsyncSocket在使用它的时候你不能以任何方式改变它
+//完成之后，onSocket:didReadData:withTag 返回的数据将是一个给定的缓冲区的子集
+//也就是说，它将会被引用到被追加的给定的缓冲区的字节
 - (void)readDataWithTimeout:(NSTimeInterval)timeout
 					 buffer:(NSMutableData *)buffer
 			   bufferOffset:(NSUInteger)offset
@@ -415,6 +460,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * 
  * If the length is 0, this method does nothing and the delegate is not called.
 **/
+//读取给定的字节数，如果length为0，方法将无用，委托将不会被调用
 - (void)readDataToLength:(NSUInteger)length withTimeout:(NSTimeInterval)timeout tag:(long)tag;
 
 /**
@@ -433,6 +479,7 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * After completion, the data returned in onSocket:didReadData:withTag: will be a subset of the given buffer.
  * That is, it will reference the bytes that were appended to the given buffer.
 **/
+//读取给定的字节数,在给定的偏移开始，字节将被追加到给定的字节缓冲区
 - (void)readDataToLength:(NSUInteger)length
              withTimeout:(NSTimeInterval)timeout
                   buffer:(NSMutableData *)buffer
@@ -451,6 +498,11 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * Note that this method is not character-set aware, so if a separator can occur naturally as part of the encoding for
  * a character, the read will prematurely end.
 **/
+//读取字节直到(包括)传入的作为分隔的"data"参数
+//如果传递0或者0长度的数据，"data"参数，该方法将无用，委托将不会被调用
+//从socket读取一行，使用"data"参数作为行的分隔符 (如HTTP的CRLF)
+//注意，此方法不是字符集，因此，如果一个分隔符出现，它自然可以作为进行编码的一部分，读取将提前结束
+
 - (void)readDataToData:(NSData *)data withTimeout:(NSTimeInterval)timeout tag:(long)tag;
 
 /**
@@ -472,6 +524,8 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * Note that this method is not character-set aware, so if a separator can occur naturally as part of the encoding for
  * a character, the read will prematurely end.
 **/
+//读取字节直到(包括)传入的作为分隔的“data”参数，在给定的偏移量开始，字节将被追加到给定的字节缓冲区。
+//从socket读取一行，使用"data"参数作为行的分隔符(如HTTP的CRLF)
 - (void)readDataToData:(NSData *)data
            withTimeout:(NSTimeInterval)timeout
                 buffer:(NSMutableData *)buffer
@@ -539,12 +593,15 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * If you pass in nil or zero-length data, this method does nothing and the delegate will not be called.
  * If the timeout value is negative, the write operation will not use a timeout.
 **/
+//将data写入socket，当完成的时候委托被调用
 - (void)writeData:(NSData *)data withTimeout:(NSTimeInterval)timeout tag:(long)tag;
 
 /**
  * Returns progress of current read or write, from 0.0 to 1.0, or NaN if no read/write (use isnan() to check).
  * "tag", "done" and "total" will be filled in if they aren't NULL.
 **/
+//返回当前读或写的进度，从0.0 到 1.0 或者 如果没有读/写的时候返回Nan(使用isNan来检查)
+//tag、done、total如果不为空的话，它们将会被填补
 - (float)progressOfReadReturningTag:(long *)tag bytesDone:(NSUInteger *)done total:(NSUInteger *)total;
 - (float)progressOfWriteReturningTag:(long *)tag bytesDone:(NSUInteger *)done total:(NSUInteger *)total;
 
@@ -587,6 +644,28 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * certificate, and then use the X509Certificate class to verify the issuer after the socket has been secured.
  * The X509Certificate class is part of the CocoaAsyncSocket open source project.
 **/
+//确保使用ssl/tls连接
+//这方法可被随时调用，tls握手将会发生在所有悬而未决的读/写完成之后。这紧跟着一个发送依赖 StartTLS消息的协议选项，在排队升级到TLS的同一时间，而不必等待写入完成。在这个方法被调用后,任何读写计划 将会发生在安全链接
+//对于可能的keys和TLS设置的值是有据可查的
+//一些可能的keys是:
+//* - kCFStreamSSLLevel
+//* - kCFStreamSSLAllowsExpiredCertificates
+//* - kCFStreamSSLAllowsExpiredRoots
+//* - kCFStreamSSLAllowsAnyRoot
+//* - kCFStreamSSLValidatesCertificateChain
+//* - kCFStreamSSLPeerName
+//* - kCFStreamSSLCertificates
+//* - kCFStreamSSLIsServer
+//
+//如果你传递空或者空字典，将使用默认的字典
+//默认设置将检查以确保由签署可信的第三方证书机构和没有过期的远程连接的证书
+//然而，它不会验证证书上的名字，除非你给它一个名字，通过kCFStreamSSLPeerName键去验证
+//这对安全的影响是重要的理解
+//想象一下你正试图创建一个到MySecureServer.com的安全连接，但因为一个被攻击的DNS服务器，所以你的socket被定向到MaliciousServer.com
+//如果你只是使用默认设置，MaliciousServer.com 有一个有效的证书
+//默认设置将无法监测到任何问题，因为证书是有效的
+//在这个特殊的情况下，要妥善保护你的连接，应设置kCFStreamSSLPeerName性质为MySecureServer.com.
+//如 果事前你不知道对等的名字的远程主机(例如，你不确认它是domain.com" or "www.domain.com")，那么你可以使用默认设置来验证证书，然后在获得验证的发行后使用X509Certificate类来验 证,X509Certificate类的CocoaAsyncSocket开源项目的一部分
 - (void)startTLS:(NSDictionary *)tlsSettings;
 
 /**
@@ -602,6 +681,12 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * This method exists in case pre-buffering needs to be disabled by default for some unforeseen reason.
  * In that case, this method exists to allow one to easily enable pre-buffering when ready.
 **/
+//对于处理readDataToData请求，数据是必须从socket以小增量的方式读取出来的
+//性能通过允许AsyncSocket去一次性读大块的数据和存储任何一个小的内部缓冲区溢出的东西来大大提高
+//这被称为预缓冲，就好像一些数据在你要求它之前就可能被读取出来
+//如果你经常使用readDataToData，使用预缓冲会有更好的性能，尤其是在iphone上
+//默认的预缓冲状态是由DEFAULT_PREBUFFERING 定义控制的，强烈建议设置其为yes
+//这方法存在一些预缓冲需要一些不可预见的原因被默认禁用的情况，这时，这种方法存在允许当就绪时，可轻松启用预缓冲
 - (void)enablePreBuffering;
 
 /**
@@ -619,6 +704,14 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * Note: After calling this method, all further method calls to this object should be done from the given runloop.
  * Also, all delegate calls will be sent on the given runloop.
 **/
+
+//当你创建一个AsyncSocket，它被添加到当前线程runloop
+//对于手动创建的socket，在线程上你打算使用它，它是最容易简单的创建的线程上的socket
+//当一个新的socket被接受，委托方法 onSocket:wantsRunLoopForNewSocket 会被调用 允许你在一个单独的线程上放置socket，这个工作最好结合在同一个线程池设计
+//如果，但是，在一个单独的线程上，在之后的时间，你需要移动一个socket，这个方法可以用来完成任务
+//此方法必须从 当前运行的 线程/runloop 的socket 调用
+//注意：此方法调用后，所有进一步的方法应该从给定的runloop上调用这个对象
+//此外，所有委托调用将会发送到给定的runloop
 - (BOOL)moveToRunLoop:(NSRunLoop *)runLoop;
 
 /**
@@ -632,6 +725,12 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * 
  * Note: NSRunLoopCommonModes is defined in 10.5. For previous versions one can use kCFRunLoopCommonModes.
 **/
+//一下三个方法
+//允许你配置 socket 使用的 运行循环模式
+//运行循环模式设置默认是NSRunLoopCommonModes
+//如果你想你的socket 在其他模式下继续操作，你可能需要添加模式 NSModalPanelRunLoopMode 或者 NSEventTrackingRunLoopMode ,或者你可能只想使用 NSRunLoopCommonModes
+//可接受的socket将自动 继承相同的运行循环模式就像侦听socket
+//注意：NSRunLoopCommonModes 定义在10.5，对于之前的版本可使用 kCFRunLoopCommonModes
 - (BOOL)setRunLoopModes:(NSArray *)runLoopModes;
 - (BOOL)addRunLoopMode:(NSString *)runLoopMode;
 - (BOOL)removeRunLoopMode:(NSString *)runLoopMode;
@@ -640,15 +739,19 @@ typedef NS_ENUM(NSInteger, AsyncSocketError) {
  * Returns the current run loop modes the AsyncSocket instance is operating in.
  * The default set of run loop modes is NSDefaultRunLoopMode.
 **/
+//返回当前正在运行的循环模式的AsyncSocket实例， run loop modes的默认设置是NSDefaultRunLoopMode
 - (NSArray *)runLoopModes;
 
 /**
  * In the event of an error, this method may be called during onSocket:willDisconnectWithError: to read
  * any data that's left on the socket.
 **/
+//一个错误的事件，在 onSocket:willDisconnectWithError: 将会被调用 去读取留在socket上的任何数据
 - (NSData *)unreadData;
 
 /* A few common line separators, for use with the readDataToData:... methods. */
+
+//一些常见的分隔符，为了去使用  readDataToData:..  方法
 + (NSData *)CRLFData;   // 0x0D0A
 + (NSData *)CRData;     // 0x0D
 + (NSData *)LFData;     // 0x0A
